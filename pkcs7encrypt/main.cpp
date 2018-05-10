@@ -86,7 +86,7 @@ X509* ReadCertificateFromFile(char* path)
 	return certificate;
 }
 
-RSA*  GetPubKey(X509* certificate)
+RSA* GetPubKey(X509* certificate)
 {
 	EVP_PKEY * pubkey = X509_get_pubkey(certificate);
 
@@ -133,10 +133,6 @@ static int _write_to_file(char *filename, unsigned char *data, unsigned int len)
 	return 1;
 }
 
-
-
-
-
 int main(int argc, char** argv)
 {
 	//I LOVE this library...
@@ -150,24 +146,41 @@ int main(int argc, char** argv)
 	}
 
 	//reading data
+	unsigned int in_length = 0;
+	unsigned char* in_data = 0;
+	_read_from_file(argv[1], &in_data, &in_length);
+
 	BIO* data_in = BIO_new(BIO_s_mem());
-	BIO_read_filename(data_in, argv[1]);
+	BIO_write(data_in, in_data, in_length);
+
 	//reading signer's cert
 	X509* signer_cert = ReadCertificateFromFile(argv[3]);
+
 	//reading ca's cert
 	X509* ca_cert = ReadCertificateFromFile(argv[4]);
 	STACK_OF(X509)* certificates_stack = sk_X509_new_null();
 	sk_X509_push(certificates_stack, ca_cert);
+
 	//reading private key
 	RSA* private_key = ReadPrivateKeyFromFile(argv[5]);
+	
 	//converting key to evp
 	EVP_PKEY* evp_private_key = EVP_PKEY_new();
 	EVP_PKEY_set1_RSA(evp_private_key, private_key);
+	
 	//signing
 	PKCS7* signed_data = PKCS7_sign(signer_cert, evp_private_key, certificates_stack, data_in, 0);
+	
 	//writing data
 	BIO* data_out = BIO_new(BIO_s_mem());
 	i2d_PKCS7_bio(data_out, signed_data);
-	BIO_write_filename(data_out, argv[2]);
+
+	unsigned int out_length = 1000000;
+	unsigned char* output = (unsigned char*)malloc(out_length);
+	memset(output, 0, out_length);
+	int new_length = BIO_read(data_out, output, out_length);
+
+	_write_to_file(argv[2], output, new_length);
+
 	return 0;
 }
