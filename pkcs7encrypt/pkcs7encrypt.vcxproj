@@ -127,6 +127,16 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="1.in" />
+    <None Include="1.out" />
+    <None Include="CA_cert.cer" />
+    <None Include="my_cert.cer" />
+    <None Include="my_key.prv" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="rip.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

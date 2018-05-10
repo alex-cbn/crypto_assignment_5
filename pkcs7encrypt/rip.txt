@@ -1,0 +1,100 @@
+
+	/*
+	// generarea unui certificat si o cheie privata pe baza unui certificat existent (modificarea public key) :
+
+	//FILE* fp = fopen("ca-cert.der", "rb");
+
+	//if (fp == NULL)
+	//{
+	//	printf("error");
+	//	return 1;
+	//}
+	//X509* cert = X509_new();
+	//d2i_X509_fp(fp, &cert);
+
+	//RSA * rsakey = RSA_new();
+	//BIGNUM *e = BN_new();
+	//BN_dec2bn(&e, "3");
+	//RSA_generate_key_ex(rsakey, 1024, e, NULL);
+
+	//EVP_PKEY *a = EVP_PKEY_new();
+
+	//EVP_PKEY_assign_RSA(a, rsakey);
+	//X509_set_pubkey(cert, a);
+
+	//FILE * fprv = fopen("key.prv", "wt");
+	//PEM_write_RSAPrivateKey(fprv, rsakey, NULL, NULL, 0, NULL, NULL);
+	//X509_sign(cert, a, EVP_sha1());
+	//FILE *newcert = fopen("file.incert", "wb");
+	//i2d_X509_fp(newcert, cert);
+
+	//fclose(newcert);
+	//fclose(fprv);
+	//fclose(fp);
+	*/
+	
+	
+	//ASN1_INTEGER * integ = ASN1_INTEGER_new();
+	//integ = BN_to_ASN1_INTEGER(publickey->n, integ);
+	//int cipherSize = integ->length;
+	////int cipherSize = BN_num_bits(publickey->n)/8;
+	//ASN1_INTEGER_free(integ);
+
+	/*unsigned char* cipherKeys = NULL;
+	cipherKeys = (unsigned char*)malloc(cipherSize);
+	int padding = RSA_PKCS1_PADDING;*/
+	//RSA_public_encrypt(24, des_keys, cipherKeys, publickey, padding);
+	//free(des_keys);
+
+	
+	
+
+	
+
+	
+
+	////enveloped_data->version->data = 0;
+	////PKCS7_RECIP_INFO* recipientInfo = PKCS7_RECIP_INFO_new();
+	//long ver = 4;
+
+	//ASN1_INTEGER_set(recipientInfo->version, ver);
+
+
+
+
+
+	//recipientInfo->cert = cert;
+
+
+	//recipientInfo->issuer_and_serial->issuer = cert->cert_info->issuer;
+	//recipientInfo->issuer_and_serial->serial = cert->cert_info->serialNumber;
+
+	//ASN1_BIT_STRING * encryptedkey = ASN1_BIT_STRING_new();
+	//ASN1_BIT_STRING_set(encryptedkey, cipherKeys, cipherSize);
+	//recipientInfo->enc_key = encryptedkey;
+
+
+
+	//recipientInfo->key_enc_algor->algorithm = OBJ_nid2obj(NID_rsaEncryption);
+
+
+	//sk_PKCS7_RECIP_INFO_push(enveloped_data->recipientinfo, recipientInfo);
+
+	//enveloped_data->enc_data = PKCS7_ENC_CONTENT_new();
+	//enveloped_data->enc_data->algorithm->algorithm = OBJ_nid2obj(NID_des_ecb);
+	//enveloped_data->enc_data->cipher = EVP_des_ecb();
+	//enveloped_data->enc_data->content_type = OBJ_nid2obj(NID_textNotice);
+	//ASN1_OCTET_STRING* octString = ASN1_OCTET_STRING_new();
+	//ASN1_OCTET_STRING_set(octString, outCihper, length);
+	//enveloped_data->enc_data->enc_data = octString;
+
+	//unsigned char* tofile = NULL;
+	//unsigned int l = 0;
+
+	//l = i2d_PKCS7_ENVELOPE(enveloped_data, &tofile);
+	//_write_to_file(argv[3], tofile, l);
+
+
+
+
+

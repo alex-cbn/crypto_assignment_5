@@ -19,4 +19,14 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="1.in" />
+    <None Include="1.out" />
+    <None Include="my_key.prv" />
+    <None Include="my_cert.cer" />
+    <None Include="CA_cert.cer" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="rip.txt" />
+  </ItemGroup>
 </Project>
