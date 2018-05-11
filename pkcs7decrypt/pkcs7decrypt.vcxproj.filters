@@ -19,4 +19,13 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="file.in" />
+    <None Include="signature.in" />
+    <None Include="u_cert.cer" />
+    <None Include="CA_cert.cer" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="cyka.txt" />
+  </ItemGroup>
 </Project>

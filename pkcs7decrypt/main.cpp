@@ -10,7 +10,92 @@
 #include <openssl\des.h>
 #include <openssl\rand.h>
 #include <openssl\pkcs7.h>
+#include <openssl\applink.c>
+#include <openssl\err.h>
 
+
+int PasswordCallbackFromString(char *buf, int size, int rwflag, void *userdata)
+{
+	int length = strlen((char*)userdata);
+	strncpy(buf, (char*)userdata, length);
+	return length;
+}
+
+RSA* ReadPrivateKeyFromFile(char* path)
+{
+	RSA* rsa_wrapper = nullptr;
+	FILE* fp = fopen(path, "r");
+	if (fp == NULL)
+	{
+		printf("Can't find the key file");
+		return nullptr;
+	}
+	BIO *bio = BIO_new(BIO_s_mem());
+	unsigned char* buffer = (unsigned char*)malloc(40960);
+	memset(buffer, 0, 40960);
+
+	//read key from file in a buffer
+	int key_length = fread(buffer, 1, 40960, fp);
+	fclose(fp);
+
+	//read bio from buffer into bio
+	BIO_write(bio, buffer, key_length);
+
+	//read RSA from bio
+	PEM_read_bio_RSAPrivateKey(bio, &rsa_wrapper, 0, 0);
+	//get them bits half_bits_ = BN_num_bits(n) / 2; //nah
+
+	return rsa_wrapper;
+}
+
+RSA* ReadPublicKeyFromFile(char* path)
+{
+	RSA* rsa_wrapper = nullptr;
+	FILE* fp = fopen(path, "r");
+	BIO *bio = BIO_new(BIO_s_mem());
+	unsigned char* buffer = (unsigned char*)malloc(40960);
+	memset(buffer, 0, 40960);
+
+	//read key from file in a buffer
+	int key_length = fread(buffer, 1, 40960, fp);
+	fclose(fp);
+
+	//read bio from buffer into bio
+	BIO_write(bio, buffer, key_length);
+	//read RSA from bio
+	PEM_read_bio_RSA_PUBKEY(bio, &rsa_wrapper, 0, 0);
+
+	return rsa_wrapper;
+}
+
+X509* ReadCertificateFromFile(char* path)
+{
+	FILE* fp = fopen(path, "rb");
+
+	if (fp == NULL)
+	{
+		printf("Error loading certificate file ! \n");
+		return NULL;
+	}
+	X509* certificate = X509_new();
+	if (d2i_X509_fp(fp, &certificate) == NULL)
+	{
+		printf("Certificatul de intrare trebuie sa fie conform codarii BER ! \n");
+		return nullptr;
+	}
+	fclose(fp);
+	return certificate;
+}
+
+RSA* GetPubKey(X509* certificate)
+{
+	EVP_PKEY * pubkey = X509_get_pubkey(certificate);
+
+	RSA *public_key = RSA_new();
+	public_key = EVP_PKEY_get1_RSA(pubkey);
+	EVP_PKEY_free(pubkey);
+	return public_key;
+}
 
 static int _read_from_file(char *filename, unsigned char **data, unsigned int *len)
 {
@@ -32,6 +117,7 @@ static int _read_from_file(char *filename, unsigned char **data, unsigned int *l
 
 	return 1;
 }
+
 static int _write_to_file(char *filename, unsigned char *data, unsigned int len)
 {
 	if (data == NULL)
@@ -47,95 +133,67 @@ static int _write_to_file(char *filename, unsigned char *data, unsigned int len)
 
 	return 1;
 }
-static void _print_hexa_buffer(unsigned char *buffer, unsigned int len)
+
+int main(int argc, char** argv)
 {
-	int i;
+	//I LOVE this library...
+	ERR_load_CRYPTO_strings();
+	OPENSSL_add_all_algorithms_noconf();
 
-	fprintf(stdout, "\n");
-	for (i = 0; i < (int)len; i++)
-		fprintf(stdout, "%02X ", buffer[i]);
-
-	fprintf(stdout, "\n");
-}
-
-int main(int argc, char**argv)
-{
-
-
-	if (argc != 4)
+	//Arguments processing
+	if (argc != 5)
 	{
-		printf("Wrong syntax !\nEx: p7encrypt.exe file.data file.privkey file.out\n");
+		printf("Wrong syntax !\nEx: p7verify.exe file.in signature.in u_cert.cer CA_cert.cer\n");
 		return 1;
 	}
 
-	unsigned char* envelope = NULL;
-	unsigned int env_len = 0;
-	PKCS7_ENVELOPE* env = PKCS7_ENVELOPE_new();
-	_read_from_file(argv[1], &envelope, &env_len);
-	env = d2i_PKCS7_ENVELOPE(&env, (const unsigned char**)&envelope, env_len);
+	//reading original data
+	unsigned int original_length = 0;
+	unsigned char* original_data = 0;
+	_read_from_file(argv[1], &original_data, &original_length);
 
-	PKCS7_RECIP_INFO* repinfo = PKCS7_RECIP_INFO_new();
-	repinfo = sk_PKCS7_RECIP_INFO_pop(env->recipientinfo);
+	BIO* data_original = BIO_new(BIO_s_mem());
+	BIO_write(data_original, original_data, original_length);
 
-	unsigned char* cryptedKeys = NULL;
-	unsigned int len = 0;
-	len = repinfo->enc_key->length;
-	cryptedKeys = (unsigned char*)malloc(len);
-	memcpy(cryptedKeys, repinfo->enc_key->data, len);
+	//reading signature data
+	unsigned int signature_length = 0;
+	unsigned char* signature_data = 0;
+	_read_from_file(argv[2], &signature_data, &signature_length);
 
-	FILE* prvkey = fopen(argv[2], "rb");
-	RSA* rsaprvkey = RSA_new();
-	PEM_read_RSAPrivateKey(prvkey, &rsaprvkey, NULL, NULL);
-	fclose(prvkey);
-	unsigned char * plainKeys = NULL;
-	plainKeys = (unsigned char*)malloc(24);
-	RSA_private_decrypt(len, cryptedKeys, plainKeys, rsaprvkey, RSA_PKCS1_PADDING);
+	BIO* data_signature = BIO_new(BIO_s_mem());
+	BIO_write(data_signature, signature_data, signature_length);
 
-	RSA_free(rsaprvkey);
+	PKCS7* signature_p7 = PKCS7_new();
+	d2i_PKCS7_bio(data_signature, &signature_p7);
 
-	unsigned char* ciphertext = NULL;
-	unsigned int ciph_len = 0;
-	ciph_len = env->enc_data->enc_data->length;
-	ciphertext = (unsigned char*)malloc(ciph_len);
-	memcpy(ciphertext, env->enc_data->enc_data->data, ciph_len);
+	//reading signer's cert
+	X509* signer_cert = ReadCertificateFromFile(argv[3]);
+	STACK_OF(X509)* certificates_stack = sk_X509_new_null();
+	sk_X509_push(certificates_stack, signer_cert);
 
-	DES_cblock cb1, cb2, cb3;
-	memcpy(cb1, plainKeys, 8);
-	unsigned char* p;
-	p = plainKeys + 8;
-	memcpy(cb2, p, 8);
-	p = p + 8;
-	memcpy(cb3, p, 8);
+	//reading ca's cert and building the store
+	X509* ca_cert = ReadCertificateFromFile(argv[4]);
+	X509_STORE *s = X509_STORE_new();
+	X509_STORE_add_cert(s, ca_cert);
 
-	DES_key_schedule k_schedule1, k_schedule2, k_schedule3;
-	DES_set_key(&cb1, &k_schedule1);
-	DES_set_key(&cb2, &k_schedule2);
-	DES_set_key(&cb3, &k_schedule3);
-	DES_cblock des_inblk;
-	DES_cblock des_outblk;
+	//verfiying certs
 
-	int blocksize = sizeof(DES_cblock);
-	int offset = 0;
-	unsigned char *output = NULL;
-	output = (unsigned char*)malloc(ciph_len);
-	while (offset < ciph_len)
-	{
-		memcpy(des_inblk, ciphertext + offset, blocksize);
-		DES_ecb3_encrypt(&des_inblk, &des_outblk, &k_schedule1, &k_schedule2, &k_schedule3, DES_DECRYPT);
-		memcpy(output + offset, des_outblk, blocksize);
-		offset = offset + blocksize;
-	}
+	//extracting public key
+	RSA* public_key = GetPubKey(signer_cert);
 
-	int padd = output[ciph_len - 1];
-	_write_to_file(argv[3], output, ciph_len - padd);
+	BIO* outie = BIO_new(BIO_s_mem());
+	int status = PKCS7_verify(signature_p7, certificates_stack, s, data_signature, outie, PKCS7_NOVERIFY);
+	unsigned int err = ERR_get_error();
+	char* b = ERR_error_string(err, NULL);
+	const char* a = ERR_reason_error_string(ERR_GET_REASON(err));
 
+	ERR_print_errors_fp(stdout);
+	//hasing the file
+	//identifying algorithm 
+	//decrypting message digest
+	//extracting message digest
+	//compare
+	
 
-
-	free(output);
-	free(ciphertext);
-	free(plainKeys);
-
-	free(cryptedKeys);
-	PKCS7_ENVELOPE_free(env);
 	return 0;
 }

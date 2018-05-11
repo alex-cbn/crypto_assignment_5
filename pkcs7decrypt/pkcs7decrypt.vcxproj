@@ -21,11 +21,21 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="CA_cert.cer" />
+    <None Include="file.in" />
+    <None Include="signature.in" />
+    <None Include="u_cert.cer" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="cyka.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{F8CD8D3E-3BF1-4CF7-B5FD-5928B116DF40}</ProjectGuid>
     <RootNamespace>pkcs7decrypt</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <ProjectName>pkcs7verify</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
