@@ -11,7 +11,7 @@
 #include <openssl\rand.h>
 #include <openssl\pkcs7.h>
 #include <openssl\applink.c>
-
+#include <openssl\err.h>
 
 int PasswordCallbackFromString(char *buf, int size, int rwflag, void *userdata)
 {
@@ -137,7 +137,6 @@ int main(int argc, char** argv)
 {
 	//I LOVE this library...
 	OPENSSL_add_all_algorithms_noconf();
-
 	//Arguments processing
 	if (argc != 6)
 	{
@@ -169,24 +168,11 @@ int main(int argc, char** argv)
 	EVP_PKEY_set1_RSA(evp_private_key, private_key);
 	
 	//signing
-	PKCS7* signed_data = PKCS7_sign(signer_cert, evp_private_key, certificates_stack, data_in, 0);
+	PKCS7* signed_data = PKCS7_sign(signer_cert, evp_private_key, certificates_stack, data_in, PKCS7_BINARY | PKCS7_NOSMIMECAP);
 
 	//writing data
 	BIO* data_out = BIO_new(BIO_s_mem());
 	i2d_PKCS7_bio(data_out, signed_data);
-
-	//and verifying
-	/*BIO* data_out_2 = BIO_new(BIO_s_mem());
-
-	STACK_OF(X509)* signer_stack = sk_X509_new_null();
-	sk_X509_push(signer_stack, signer_cert);
-
-	X509_STORE *store = X509_STORE_new();
-	X509_STORE_add_cert(store, ca_cert);
-
-	int status = PKCS7_verify(signed_data, signer_stack, store, data_out, data_out_2, 0);*/
-
-
 	unsigned int out_length = 1000000;
 	unsigned char* output = (unsigned char*)malloc(out_length);
 	memset(output, 0, out_length);

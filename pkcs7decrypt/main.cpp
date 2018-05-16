@@ -137,7 +137,6 @@ static int _write_to_file(char *filename, unsigned char *data, unsigned int len)
 int main(int argc, char** argv)
 {
 	//I LOVE this library...
-	ERR_load_CRYPTO_strings();
 	OPENSSL_add_all_algorithms_noconf();
 
 	//Arguments processing
@@ -182,17 +181,16 @@ int main(int argc, char** argv)
 	RSA* public_key = GetPubKey(signer_cert);
 
 	BIO* outie = BIO_new(BIO_s_mem());
-	int status = PKCS7_verify(signature_p7, certificates_stack, s, data_signature, outie, PKCS7_NOVERIFY);
-	unsigned int err = ERR_get_error();
-	char* b = ERR_error_string(err, NULL);
-	const char* a = ERR_reason_error_string(ERR_GET_REASON(err));
+	int status = PKCS7_verify(signature_p7, certificates_stack, s, 0, outie, 0);
 
-	ERR_print_errors_fp(stdout);
-	//hasing the file
-	//identifying algorithm 
-	//decrypting message digest
-	//extracting message digest
-	//compare
+	if (status)
+	{
+		printf("Signature verified\n");
+	}
+	else
+	{
+		printf("Signature doesn't match\n");
+	}
 	
 
 	return 0;
